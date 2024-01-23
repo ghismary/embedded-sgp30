@@ -186,7 +186,7 @@ where
     /// This needs to be called just after calling
     /// [`Sgp30::initialize_air_quality_measure()`], and prior to any call to
     /// [`Sgp30::measure_air_quality()`].
-    pub fn set_baseline(&mut self, baseline: &AirQuality) -> Result<(), Error<I2C::Error>> {
+    pub fn set_baseline(&mut self, baseline: AirQuality) -> Result<(), Error<I2C::Error>> {
         let co2 = Self::get_u8_array_value(baseline.co2);
         let co2_crc = [Self::calc_crc(&co2)];
         let tvoc = Self::get_u8_array_value(baseline.tvoc);
@@ -320,4 +320,135 @@ mod tests {
     use crate::*;
     use embedded_hal_mock::eh1::delay::StdSleep as Delay;
     use embedded_hal_mock::eh1::i2c::{Mock as I2cMock, Transaction as I2cTransaction};
+
+    fn create_device() -> Sgp30<I2cMock, Delay> {
+        let expectations = [
+            I2cTransaction::write(I2C_ADDRESS, GET_SERIAL_ID_COMMAND.to_vec()),
+            I2cTransaction::transaction_start(I2C_ADDRESS),
+            I2cTransaction::read(I2C_ADDRESS, [0x01, 0x02].to_vec()),
+            I2cTransaction::read(I2C_ADDRESS, [0x17].to_vec()),
+            I2cTransaction::read(I2C_ADDRESS, [0x03, 0x04].to_vec()),
+            I2cTransaction::read(I2C_ADDRESS, [0x68].to_vec()),
+            I2cTransaction::read(I2C_ADDRESS, [0x05, 0x06].to_vec()),
+            I2cTransaction::read(I2C_ADDRESS, [0x50].to_vec()),
+            I2cTransaction::transaction_end(I2C_ADDRESS),
+            I2cTransaction::transaction_start(I2C_ADDRESS),
+            I2cTransaction::write(I2C_ADDRESS, GET_FEATURE_SET_VERSION_COMMAND.to_vec()),
+            I2cTransaction::read(I2C_ADDRESS, [0x00, 0x20].to_vec()),
+            I2cTransaction::read(I2C_ADDRESS, [0x07].to_vec()),
+            I2cTransaction::transaction_end(I2C_ADDRESS),
+        ];
+        let i2c = I2cMock::new(&expectations);
+        let mut device = Sgp30::new(i2c, I2C_ADDRESS, Delay {}).unwrap();
+        device.i2c.done();
+        device
+    }
+
+    #[test]
+    fn get_baseline() {
+        let expectations = [
+            I2cTransaction::write(I2C_ADDRESS, GET_BASELINE_COMMAND.to_vec()),
+            I2cTransaction::transaction_start(I2C_ADDRESS),
+            I2cTransaction::read(I2C_ADDRESS, [0x02, 0x76].to_vec()),
+            I2cTransaction::read(I2C_ADDRESS, [0x06].to_vec()),
+            I2cTransaction::read(I2C_ADDRESS, [0x02, 0xdd].to_vec()),
+            I2cTransaction::read(I2C_ADDRESS, [0x10].to_vec()),
+            I2cTransaction::transaction_end(I2C_ADDRESS),
+        ];
+        let mut device = create_device();
+        device.i2c.update_expectations(&expectations);
+        device.get_baseline().unwrap();
+        device.i2c.done();
+    }
+
+    #[test]
+    fn initialize_air_quality_measure() {
+        let expectations = [I2cTransaction::write(
+            I2C_ADDRESS,
+            INIT_AIR_QUALITY_COMMAND.to_vec(),
+        )];
+        let mut device = create_device();
+        device.i2c.update_expectations(&expectations);
+        device.initialize_air_quality_measure().unwrap();
+        device.i2c.done();
+    }
+
+    #[test]
+    fn measure_air_quality() {
+        let expectations = [
+            I2cTransaction::write(I2C_ADDRESS, MEASURE_AIR_QUALITY_COMMAND.to_vec()),
+            I2cTransaction::transaction_start(I2C_ADDRESS),
+            I2cTransaction::read(I2C_ADDRESS, [0x02, 0x76].to_vec()),
+            I2cTransaction::read(I2C_ADDRESS, [0x06].to_vec()),
+            I2cTransaction::read(I2C_ADDRESS, [0x02, 0xdd].to_vec()),
+            I2cTransaction::read(I2C_ADDRESS, [0x10].to_vec()),
+            I2cTransaction::transaction_end(I2C_ADDRESS),
+        ];
+        let mut device = create_device();
+        device.i2c.update_expectations(&expectations);
+        device.measure_air_quality().unwrap();
+        device.i2c.done();
+    }
+
+    #[test]
+    fn measure_raw_signals() {
+        let expectations = [
+            I2cTransaction::write(I2C_ADDRESS, MEASURE_RAW_SIGNALS_COMMAND.to_vec()),
+            I2cTransaction::transaction_start(I2C_ADDRESS),
+            I2cTransaction::read(I2C_ADDRESS, [0x00, 0x24].to_vec()),
+            I2cTransaction::read(I2C_ADDRESS, [0xc3].to_vec()),
+            I2cTransaction::read(I2C_ADDRESS, [0x01, 0x51].to_vec()),
+            I2cTransaction::read(I2C_ADDRESS, [0x3a].to_vec()),
+            I2cTransaction::transaction_end(I2C_ADDRESS),
+        ];
+        let mut device = create_device();
+        device.i2c.update_expectations(&expectations);
+        device.measure_raw_signals().unwrap();
+        device.i2c.done();
+    }
+
+    #[test]
+    fn reset() {
+        let expectations = [I2cTransaction::write(I2C_ADDRESS, RESET_COMMAND.to_vec())];
+        let mut device = create_device();
+        device.i2c.update_expectations(&expectations);
+        device.reset().unwrap();
+        device.i2c.done();
+    }
+
+    #[test]
+    fn set_baseline() {
+        let air_quality = AirQuality {
+            co2: 630,
+            tvoc: 733,
+        };
+        let expectations = [
+            I2cTransaction::transaction_start(I2C_ADDRESS),
+            I2cTransaction::write(I2C_ADDRESS, SET_BASELINE_COMMAND.to_vec()),
+            I2cTransaction::write(I2C_ADDRESS, [0x02, 0x76].to_vec()),
+            I2cTransaction::write(I2C_ADDRESS, [0x06].to_vec()),
+            I2cTransaction::write(I2C_ADDRESS, [0x02, 0xdd].to_vec()),
+            I2cTransaction::write(I2C_ADDRESS, [0x10].to_vec()),
+            I2cTransaction::transaction_end(I2C_ADDRESS),
+        ];
+        let mut device = create_device();
+        device.i2c.update_expectations(&expectations);
+        device.set_baseline(air_quality).unwrap();
+        device.i2c.done();
+    }
+
+    #[test]
+    fn set_humidity() {
+        let expectations = [
+            I2cTransaction::transaction_start(I2C_ADDRESS),
+            I2cTransaction::write(I2C_ADDRESS, SET_HUMIDITY_COMMAND.to_vec()),
+            I2cTransaction::write(I2C_ADDRESS, [0x09, 0x35].to_vec()),
+            I2cTransaction::write(I2C_ADDRESS, [0x72].to_vec()),
+            I2cTransaction::transaction_end(I2C_ADDRESS),
+        ];
+        let mut device = create_device();
+        device.i2c.update_expectations(&expectations);
+        device.set_humidity(9.21).unwrap();
+        device.i2c.done();
+    }
 }
