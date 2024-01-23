@@ -33,6 +33,9 @@ where
     /// The detected chip is an invalid product, either it has an invalid
     /// product type, or an invalid product version
     InvalidProduct,
+    /// The operation that is asked for is not supported by this version of
+    /// the sensor.
+    FeatureNotSupported,
     /// The computed CRC and the one sent by the device mismatch
     BadCrc,
 }
@@ -71,6 +74,7 @@ pub struct Sgp30<I2C, D> {
     address: SevenBitAddress,
     delay: D,
     i2c: I2C,
+    product_version: u8,
 }
 
 impl<I2C, D> Sgp30<I2C, D>
@@ -152,6 +156,7 @@ where
             address,
             delay,
             i2c,
+            product_version: 0,
         };
 
         // Check that the chip is present
@@ -162,10 +167,11 @@ where
         // Check the feature set
         let feature_set_version = device.get_feature_set_version()?;
         let product_type = (feature_set_version & 0xf000) >> 12;
-        let product_version = feature_set_version & 0x00ff;
+        let product_version = (feature_set_version & 0x00ff) as u8;
         if product_type != 0 || product_version == 0 {
             return Err(Error::InvalidProduct);
         }
+        device.product_version = product_version;
 
         Ok(device)
     }
@@ -208,7 +214,13 @@ where
     ///
     /// The given humidity is the absolute humidity in g/m³, that needs to be
     /// measured with an external sensor such as the SHT3x.
+    ///
+    /// <div class="warning">This feature may not be available depending on
+    /// the version of your sensor.</div>
     pub fn set_humidity(&mut self, humidity: f32) -> Result<(), Error<I2C::Error>> {
+        if self.product_version < 0x20 {
+            return Err(Error::FeatureNotSupported);
+        }
         let humidity = [
             humidity.trunc() as u8,
             (humidity.fract() * 256.0).trunc() as u8,

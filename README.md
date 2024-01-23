@@ -40,7 +40,6 @@ datasheet link below.
       sht3x.
 - [x] Do a sofware set.
 - [x] Perform a raw signals measure (returns the Ethanol and H₂ values).
-- [ ] Allow operations based on the feature set version
 - [ ] Include a no floating-point variant for systems without fpu.
 
 ## Usage
