@@ -85,6 +85,24 @@ fn main() -> Result<(), embedded_sgp30::Error<hal::I2CError>> {
 }
 ```
 
+## Correct usage of baseline get & set
+
+The saving and restore of baseline values should not be done at any random
+time.
+
+If starting the sensor without restoring a previous baseline, the sensor will
+try to determine a new baseline. For that, the adjustement algorithm has to run
+for 12 hours. Therefore you should not save the baseline values during these
+12 hours. Reading out the baseline prior to that should be avoided unless a
+valid baseline has first been restored.
+
+After these 12 hours, or if a baseline has been restored at startup, the
+baseline should be stored approximately once per hour. If the sensor is off for
+some time, the stored baseline values can be stored for a maximum of 7 days.
+If the sensor is off for a longer time, the stored baseline should be erased
+and the process started again from the beginning, so you should wait once again
+12 hours before storing the new baseline.
+
 ## License
 
 Licensed under either of
