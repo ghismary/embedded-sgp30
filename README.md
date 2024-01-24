@@ -52,7 +52,7 @@ use embedded_hal::delay::DelayNs;
 use embedded_sgp30::{Sgp30, I2C_ADDRESS};
 use linux_embedded_hal as hal;
 
-fn main() -> Result<(), embedded_sgp30::Error<linux_embedded_hal::I2CError>> {
+fn main() -> Result<(), embedded_sgp30::Error<hal::I2CError>> {
     // Create the I2C device from the chosen embedded-hal implementation,
     // in this case linux-embedded-hal
     let i2c = match hal::I2cdev::new("/dev/i2c-1") {
