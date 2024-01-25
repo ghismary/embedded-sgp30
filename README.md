@@ -1,3 +1,9 @@
+[![crates.io](https://img.shields.io/crates/v/embedded-sgp30.svg)](https://crates.io/crates/embedded-sgp30)
+[![License](https://img.shields.io/crates/l/embedded-sgp30.svg)](https://crates.io/crates/embedded-sgp30)
+[![Documentation](https://docs.rs/embedded-sgp30/badge.svg)](https://docs.rs/embedded-sgp30)
+
+# embedded-sgp30
+
 This is a platform agnostic Rust driver the SGP30 digital gas sensor using the
 [`embedded-hal`] traits.
 
