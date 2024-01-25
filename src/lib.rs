@@ -199,10 +199,10 @@ where
         let tvoc_crc = [Self::calc_crc(&tvoc)];
         let mut operations = [
             Operation::Write(SET_BASELINE_COMMAND),
-            Operation::Write(&co2),
-            Operation::Write(&co2_crc),
             Operation::Write(&tvoc),
             Operation::Write(&tvoc_crc),
+            Operation::Write(&co2),
+            Operation::Write(&co2_crc),
         ];
         self.i2c.transaction(self.address, &mut operations)?;
         self.delay.delay_ms(10);
@@ -437,10 +437,10 @@ mod tests {
         let expectations = [
             I2cTransaction::transaction_start(I2C_ADDRESS),
             I2cTransaction::write(I2C_ADDRESS, SET_BASELINE_COMMAND.to_vec()),
-            I2cTransaction::write(I2C_ADDRESS, [0x02, 0x76].to_vec()),
-            I2cTransaction::write(I2C_ADDRESS, [0x06].to_vec()),
             I2cTransaction::write(I2C_ADDRESS, [0x02, 0xdd].to_vec()),
             I2cTransaction::write(I2C_ADDRESS, [0x10].to_vec()),
+            I2cTransaction::write(I2C_ADDRESS, [0x02, 0x76].to_vec()),
+            I2cTransaction::write(I2C_ADDRESS, [0x06].to_vec()),
             I2cTransaction::transaction_end(I2C_ADDRESS),
         ];
         let mut device = create_device();
