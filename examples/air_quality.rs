@@ -5,13 +5,17 @@ use linux_embedded_hal as hal;
 fn main() -> Result<(), embedded_sgp30::Error<hal::I2CError>> {
     // Create the I2C device from the chosen embedded-hal implementation,
     // in this case linux-embedded-hal
-    let i2c = match hal::I2cdev::new("/dev/i2c-1") {
+    let mut i2c = match hal::I2cdev::new("/dev/i2c-1") {
         Err(err) => {
             eprintln!("Could not create I2C device: {}", err);
             std::process::exit(1);
         }
         Ok(i2c) => i2c,
     };
+    if let Err(err) = i2c.set_slave_address(I2C_ADDRESS as u16) {
+        eprintln!("Could not set I2C slave address: {}", err);
+        std::process::exit(1);
+    }
 
     // Create the sensor and configure its repeatability
     let mut sensor = Sgp30::new(i2c, I2C_ADDRESS, hal::Delay {})?;
