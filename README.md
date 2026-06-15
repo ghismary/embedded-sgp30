@@ -1,4 +1,6 @@
 [![crates.io](https://img.shields.io/crates/v/embedded-sgp30.svg)](https://crates.io/crates/embedded-sgp30)
+[![Github status](https://github.com/ghismary/embedded-sgp30/actions/workflows/general.yml/badge.svg)](https://github.com/ghismary/embedded-sgp30)
+[![codecov](https://codecov.io/gh/ghismary/embedded-sgp30/graph/badge.svg?token=ulA2Iiy0l0)](https://codecov.io/gh/ghismary/embedded-sgp30)
 [![License](https://img.shields.io/crates/l/embedded-sgp30.svg)](https://crates.io/crates/embedded-sgp30)
 [![Documentation](https://docs.rs/embedded-sgp30/badge.svg)](https://docs.rs/embedded-sgp30)
 
