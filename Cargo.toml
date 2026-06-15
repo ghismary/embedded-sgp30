@@ -2,26 +2,30 @@
 name = "embedded-sgp30"
 version = "0.1.0"
 authors = ["Ghislain MARY <ghislain@ghislainmary.fr>"]
-repository = "https://gitlab.com/ghislainmary/embedded-sgp30"
+repository = "https://github.com/ghismary/embedded-sgp30"
 license = "MIT OR Apache-2.0"
 description = " Platform-agnostic Rust driver for the SGP30 gas sensor for indoor air quality applications."
 documentation = "https://docs.rs/embedded-sgp30/"
 readme = "README.md"
 keywords = ["gas", "air-quality", "sensor", "sgp30", "embedded-hal"]
 categories = ["embedded", "hardware-support", "no-std"]
-homepage = "https://gitlab.com/ghislainmary/embedded-sgp30"
+homepage = "https://github.com/ghismary/embedded-sgp30"
 include = ["/**/*.rs", "/Cargo.toml", "/README.md"]
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[features]
+default = []
+async = []
 
 [dependencies]
-crc = "3.0.1"
-embedded-hal = "1.0.0"
-micromath = "2.1.0"
+crc = "3.4"
+embedded-hal = "1.0"
+embedded-hal-async = "1.0"
+maybe-async-cfg = "0.2"
+micromath = "2.1"
 
 [dev-dependencies]
-embedded-hal-mock = { version = "0.10.0", default-features = false, features = [
+embedded-hal-mock = { version = "0.11", default-features = false, features = [
     "eh1",
 ] }
 linux-embedded-hal = "0.4.0"
