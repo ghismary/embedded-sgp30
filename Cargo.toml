@@ -28,4 +28,6 @@ micromath = "2.1"
 embedded-hal-mock = { version = "0.11", default-features = false, features = [
     "eh1",
 ] }
-linux-embedded-hal = "0.4.0"
+
+[target.'cfg(target_os = "linux")'.dev-dependencies]
+linux-embedded-hal = "0.4"
