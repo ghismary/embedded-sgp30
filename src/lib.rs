@@ -365,9 +365,11 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::*;
+    use embedded_hal::i2c::ErrorKind;
     use embedded_hal_mock::eh1::delay::StdSleep as Delay;
     use embedded_hal_mock::eh1::i2c::{Mock as I2cMock, Transaction as I2cTransaction};
+
+    use super::*;
 
     fn create_device() -> Sgp30<I2cMock, Delay> {
         let expectations = [
@@ -388,6 +390,69 @@ mod tests {
         let mut device = Sgp30::new(i2c, DEFAULT_I2C_ADDRESS, Delay {}).unwrap();
         device.i2c.done();
         device
+    }
+
+    #[test]
+    fn chip_not_detected() {
+        let expectations =
+            [
+                I2cTransaction::write(DEFAULT_I2C_ADDRESS, GET_SERIAL_ID_COMMAND.to_vec())
+                    .with_error(ErrorKind::Other),
+            ];
+        let mut i2c = I2cMock::new(&expectations);
+        assert!(matches!(
+            Sgp30::new(i2c.by_ref(), DEFAULT_I2C_ADDRESS, Delay {}),
+            Err(Error::ChipNotDetected)
+        ));
+        i2c.done();
+    }
+
+    #[test]
+    fn invalid_product() {
+        let expectations = [
+            I2cTransaction::write(DEFAULT_I2C_ADDRESS, GET_SERIAL_ID_COMMAND.to_vec()),
+            I2cTransaction::read(
+                DEFAULT_I2C_ADDRESS,
+                [0x01, 0x02, 0x17, 0x03, 0x04, 0x68, 0x05, 0x06, 0x50].to_vec(),
+            ),
+            I2cTransaction::transaction_start(DEFAULT_I2C_ADDRESS),
+            I2cTransaction::write(
+                DEFAULT_I2C_ADDRESS,
+                GET_FEATURE_SET_VERSION_COMMAND.to_vec(),
+            ),
+            I2cTransaction::read(DEFAULT_I2C_ADDRESS, [0x00, 0x00, 0x81].to_vec()),
+            I2cTransaction::transaction_end(DEFAULT_I2C_ADDRESS),
+        ];
+        let mut i2c = I2cMock::new(&expectations);
+        assert!(matches!(
+            Sgp30::new(i2c.by_ref(), DEFAULT_I2C_ADDRESS, Delay {}),
+            Err(Error::InvalidProduct)
+        ));
+        i2c.done();
+    }
+
+    #[test]
+    fn bad_crc() {
+        let expectations = [
+            I2cTransaction::write(DEFAULT_I2C_ADDRESS, GET_SERIAL_ID_COMMAND.to_vec()),
+            I2cTransaction::read(
+                DEFAULT_I2C_ADDRESS,
+                [0x01, 0x02, 0x17, 0x03, 0x04, 0x68, 0x05, 0x06, 0x50].to_vec(),
+            ),
+            I2cTransaction::transaction_start(DEFAULT_I2C_ADDRESS),
+            I2cTransaction::write(
+                DEFAULT_I2C_ADDRESS,
+                GET_FEATURE_SET_VERSION_COMMAND.to_vec(),
+            ),
+            I2cTransaction::read(DEFAULT_I2C_ADDRESS, [0x00, 0x00, 0x07].to_vec()),
+            I2cTransaction::transaction_end(DEFAULT_I2C_ADDRESS),
+        ];
+        let mut i2c = I2cMock::new(&expectations);
+        assert!(matches!(
+            Sgp30::new(i2c.by_ref(), DEFAULT_I2C_ADDRESS, Delay {}),
+            Err(Error::BadCrc)
+        ));
+        i2c.done();
     }
 
     #[test]
@@ -501,6 +566,31 @@ mod tests {
         let mut device = create_device();
         device.i2c.update_expectations(&expectations);
         device.set_humidity(9.21).unwrap();
+        device.i2c.done();
+    }
+
+    #[test]
+    fn set_humidity_feature_not_supported() {
+        let expectations = [
+            I2cTransaction::write(DEFAULT_I2C_ADDRESS, GET_SERIAL_ID_COMMAND.to_vec()),
+            I2cTransaction::read(
+                DEFAULT_I2C_ADDRESS,
+                [0x01, 0x02, 0x17, 0x03, 0x04, 0x68, 0x05, 0x06, 0x50].to_vec(),
+            ),
+            I2cTransaction::transaction_start(DEFAULT_I2C_ADDRESS),
+            I2cTransaction::write(
+                DEFAULT_I2C_ADDRESS,
+                GET_FEATURE_SET_VERSION_COMMAND.to_vec(),
+            ),
+            I2cTransaction::read(DEFAULT_I2C_ADDRESS, [0x00, 0x1A, 0x19].to_vec()),
+            I2cTransaction::transaction_end(DEFAULT_I2C_ADDRESS),
+        ];
+        let i2c = I2cMock::new(&expectations);
+        let mut device = Sgp30::new(i2c, DEFAULT_I2C_ADDRESS, Delay {}).unwrap();
+        assert!(matches!(
+            device.set_humidity(9.21),
+            Err(Error::FeatureNotSupported)
+        ));
         device.i2c.done();
     }
 }
